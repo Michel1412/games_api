@@ -1,0 +1,8 @@
+.git
+.env
+*.log
+service-account.json
+google-application-credentials.json
+coverage.out
+tmp
+bin

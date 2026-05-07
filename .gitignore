@@ -1,0 +1,7 @@
+.env
+*.log
+service-account.json
+google-application-credentials.json
+/bin/
+/tmp/
+coverage.out
