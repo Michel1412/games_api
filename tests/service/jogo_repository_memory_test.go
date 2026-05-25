@@ -1,17 +1,18 @@
-package service
+package service_test
 
 import (
 	"context"
 	"testing"
 
 	"games_api/internal/domain/jogo"
+	"games_api/internal/service"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestMemoryJogoRepositoryListReturnsInitialJogos(t *testing.T) {
-	repo := NewMemoryJogoRepository()
+	repo := service.NewMemoryJogoRepository()
 
 	jogos, err := repo.List(context.Background())
 
@@ -23,7 +24,7 @@ func TestMemoryJogoRepositoryListReturnsInitialJogos(t *testing.T) {
 }
 
 func TestMemoryJogoRepositoryCreateUsesSequentialID(t *testing.T) {
-	repo := NewMemoryJogoRepository()
+	repo := service.NewMemoryJogoRepository()
 
 	created, err := repo.Create(context.Background(), jogo.Jogo{
 		Nome:   "Elden Ring",
@@ -37,7 +38,7 @@ func TestMemoryJogoRepositoryCreateUsesSequentialID(t *testing.T) {
 }
 
 func TestMemoryJogoRepositoryCRUD(t *testing.T) {
-	repo := NewMemoryJogoRepository()
+	repo := service.NewMemoryJogoRepository()
 
 	created, err := repo.Create(context.Background(), jogo.Jogo{
 		Nome:   "Hades",
@@ -64,5 +65,5 @@ func TestMemoryJogoRepositoryCRUD(t *testing.T) {
 	require.NoError(t, err)
 
 	_, err = repo.GetByID(context.Background(), created.ID)
-	assert.ErrorIs(t, err, ErrJogoNotFound)
+	assert.ErrorIs(t, err, service.ErrJogoNotFound)
 }

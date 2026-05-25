@@ -1,9 +1,10 @@
-package user
+package user_test
 
 import (
 	"testing"
 
 	domainuser "games_api/internal/domain/user"
+	userusecase "games_api/internal/usecase/user"
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestLoginUseCaseReturnsTokenForValidCredentials(t *testing.T) {
-	uc := NewLoginUseCase()
+	uc := userusecase.NewLoginUseCase()
 
 	response, err := uc.Execute(domainuser.LoginRequest{
 		Email:    "usuario@esoft.com",
@@ -24,7 +25,7 @@ func TestLoginUseCaseReturnsTokenForValidCredentials(t *testing.T) {
 }
 
 func TestLoginUseCaseRejectsInvalidCredentials(t *testing.T) {
-	uc := NewLoginUseCase()
+	uc := userusecase.NewLoginUseCase()
 
 	_, err := uc.Execute(domainuser.LoginRequest{
 		Email:    "usuario@esoft.com",
@@ -36,7 +37,7 @@ func TestLoginUseCaseRejectsInvalidCredentials(t *testing.T) {
 }
 
 func TestLoginUseCaseValidatesRequiredFields(t *testing.T) {
-	uc := NewLoginUseCase()
+	uc := userusecase.NewLoginUseCase()
 
 	_, err := uc.Execute(domainuser.LoginRequest{})
 

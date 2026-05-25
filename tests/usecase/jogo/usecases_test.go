@@ -1,4 +1,4 @@
-package jogo
+package jogo_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 
 	domainjogo "games_api/internal/domain/jogo"
 	"games_api/internal/service"
+	jogousecase "games_api/internal/usecase/jogo"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,7 +63,7 @@ func (r *fakeJogoRepository) Delete(_ context.Context, id int) error {
 
 func TestListJogosUseCase(t *testing.T) {
 	repo := &fakeJogoRepository{items: []domainjogo.Jogo{{ID: 1, Nome: "Zelda"}}}
-	uc := NewListJogosUseCase(repo)
+	uc := jogousecase.NewListJogosUseCase(repo)
 
 	result, err := uc.Execute(context.Background())
 
@@ -73,7 +74,7 @@ func TestListJogosUseCase(t *testing.T) {
 
 func TestGetJogoUseCase(t *testing.T) {
 	repo := &fakeJogoRepository{items: []domainjogo.Jogo{{ID: 2, Nome: "FIFA 23"}}}
-	uc := NewGetJogoUseCase(repo)
+	uc := jogousecase.NewGetJogoUseCase(repo)
 
 	result, err := uc.Execute(context.Background(), 2)
 
@@ -84,7 +85,7 @@ func TestGetJogoUseCase(t *testing.T) {
 
 func TestCreateJogoUseCaseValidatesRequest(t *testing.T) {
 	repo := &fakeJogoRepository{}
-	uc := NewCreateJogoUseCase(repo)
+	uc := jogousecase.NewCreateJogoUseCase(repo)
 
 	_, err := uc.Execute(context.Background(), domainjogo.CreateJogoRequest{Nota: 11})
 
@@ -94,7 +95,7 @@ func TestCreateJogoUseCaseValidatesRequest(t *testing.T) {
 
 func TestCreateJogoUseCaseCreatesJogo(t *testing.T) {
 	repo := &fakeJogoRepository{created: domainjogo.Jogo{ID: 3, Nome: "Elden Ring", Tipo: "RPG", Nota: 9, Review: "Otimo"}}
-	uc := NewCreateJogoUseCase(repo)
+	uc := jogousecase.NewCreateJogoUseCase(repo)
 
 	result, err := uc.Execute(context.Background(), domainjogo.CreateJogoRequest{
 		Nome: " Elden Ring ", Tipo: "RPG", Nota: 9, Review: "Otimo",
@@ -108,7 +109,7 @@ func TestCreateJogoUseCaseCreatesJogo(t *testing.T) {
 
 func TestUpdateJogoUseCaseValidatesRequest(t *testing.T) {
 	repo := &fakeJogoRepository{}
-	uc := NewUpdateJogoUseCase(repo)
+	uc := jogousecase.NewUpdateJogoUseCase(repo)
 
 	_, err := uc.Execute(context.Background(), 1, domainjogo.UpdateJogoRequest{Nota: 0})
 
@@ -118,7 +119,7 @@ func TestUpdateJogoUseCaseValidatesRequest(t *testing.T) {
 
 func TestUpdateJogoUseCaseReturnsRepositoryError(t *testing.T) {
 	repo := &fakeJogoRepository{err: service.ErrJogoNotFound}
-	uc := NewUpdateJogoUseCase(repo)
+	uc := jogousecase.NewUpdateJogoUseCase(repo)
 
 	_, err := uc.Execute(context.Background(), 99, domainjogo.UpdateJogoRequest{
 		Nome: "Halo", Tipo: "FPS", Nota: 8, Review: "Classico",
@@ -130,7 +131,7 @@ func TestUpdateJogoUseCaseReturnsRepositoryError(t *testing.T) {
 
 func TestDeleteJogoUseCase(t *testing.T) {
 	repo := &fakeJogoRepository{}
-	uc := NewDeleteJogoUseCase(repo)
+	uc := jogousecase.NewDeleteJogoUseCase(repo)
 
 	err := uc.Execute(context.Background(), 2)
 

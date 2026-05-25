@@ -9,6 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 )
 
 type LoginUseCase interface {
@@ -44,8 +45,24 @@ func NewRouter(
 	deleteUC DeleteJogoUseCase,
 ) http.Handler {
 	r := chi.NewRouter()
+
 	r.Use(middleware.Logger)
 	r.Use(middleware.Recoverer)
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedMethods: []string{
+			http.MethodGet,
+			http.MethodPost,
+			http.MethodPut,
+			http.MethodDelete,
+			http.MethodOptions,
+		},
+		AllowedHeaders:   []string{"*"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: false,
+		MaxAge:           300,
+	}))
 
 	userHandler := NewUserHandler(loginUC)
 	jogoHandler := NewJogoHandler(listUC, getUC, createUC, updateUC, deleteUC)

@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"time"
 
+	"games_api/internal/bootstrap"
 	"games_api/internal/config"
 	"games_api/internal/handler"
-	"games_api/internal/service"
 	jogousecase "games_api/internal/usecase/jogo"
 	userusecase "games_api/internal/usecase/user"
 )
@@ -20,8 +20,15 @@ func main() {
 	}
 
 	ctx := context.Background()
-	repo, closeRepo := buildRepository(ctx, cfg)
-	defer closeRepo()
+	repo, closeRepo, err := bootstrap.BuildRepository(ctx, cfg)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	defer func() {
+		if err := closeRepo(); err != nil {
+			log.Printf("erro ao fechar repositorio: %v", err)
+		}
+	}()
 
 	router := handler.NewRouter(
 		userusecase.NewLoginUseCase(),
@@ -41,26 +48,5 @@ func main() {
 	log.Printf("servidor iniciado na porta %s", cfg.Port)
 	if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("erro ao iniciar servidor: %v", err)
-	}
-}
-
-func buildRepository(ctx context.Context, cfg config.Config) (service.JogoRepository, func()) {
-	if !cfg.IsProd() {
-		return service.NewMemoryJogoRepository(), func() {}
-	}
-
-	if err := cfg.PrepareGoogleCredentialsFile(); err != nil {
-		log.Fatalf("erro ao preparar credenciais do firestore: %v", err)
-	}
-
-	repo, err := service.NewFirestoreJogoRepository(ctx, cfg.GCPProjectID)
-	if err != nil {
-		log.Fatalf("erro ao conectar no firestore: %v", err)
-	}
-
-	return repo, func() {
-		if err := repo.Close(); err != nil {
-			log.Printf("erro ao fechar firestore: %v", err)
-		}
 	}
 }

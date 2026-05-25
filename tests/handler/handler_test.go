@@ -1,4 +1,4 @@
-package handler
+package handler_test
 
 import (
 	"encoding/json"
@@ -8,26 +8,10 @@ import (
 	"testing"
 
 	domainjogo "games_api/internal/domain/jogo"
-	"games_api/internal/service"
-	jogousecase "games_api/internal/usecase/jogo"
-	userusecase "games_api/internal/usecase/user"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func newTestRouter() http.Handler {
-	repo := service.NewMemoryJogoRepository()
-
-	return NewRouter(
-		userusecase.NewLoginUseCase(),
-		jogousecase.NewListJogosUseCase(repo),
-		jogousecase.NewGetJogoUseCase(repo),
-		jogousecase.NewCreateJogoUseCase(repo),
-		jogousecase.NewUpdateJogoUseCase(repo),
-		jogousecase.NewDeleteJogoUseCase(repo),
-	)
-}
 
 func TestLoginHandlerReturnsToken(t *testing.T) {
 	router := newTestRouter()
