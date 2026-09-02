@@ -32,7 +32,7 @@ func NewFirestoreJogoRepository(ctx context.Context, projectID string) (*Firesto
 		return nil, err
 	}
 
-	return &FirestoreJogoRepository{client: client}, nil
+	return NewFirestoreJogoRepositoryWithClient(client), nil
 }
 
 func (r *FirestoreJogoRepository) Close() error {
@@ -85,7 +85,7 @@ func (r *FirestoreJogoRepository) Create(ctx context.Context, data jogo.Jogo) (j
 
 	err := r.client.RunTransaction(ctx, func(ctx context.Context, tx *firestore.Transaction) error {
 		counterRef := r.client.Collection(countersCollection).Doc(jogosCounterDoc)
-		nextID, err := r.nextID(ctx, tx, counterRef)
+		nextID, err := nextFirestoreID(ctx, tx, counterRef)
 		if err != nil {
 			return err
 		}
@@ -136,23 +136,6 @@ func (r *FirestoreJogoRepository) Delete(ctx context.Context, id int) error {
 
 	_, err := docRef.Delete(ctx)
 	return err
-}
-
-func (r *FirestoreJogoRepository) nextID(ctx context.Context, tx *firestore.Transaction, counterRef *firestore.DocumentRef) (int, error) {
-	doc, err := tx.Get(counterRef)
-	if isNotFound(err) {
-		return 1, nil
-	}
-	if err != nil {
-		return 0, err
-	}
-
-	var counter firestoreCounter
-	if err := doc.DataTo(&counter); err != nil {
-		return 0, err
-	}
-
-	return counter.CurrentID + 1, nil
 }
 
 func isNotFound(err error) bool {

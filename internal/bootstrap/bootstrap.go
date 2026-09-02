@@ -8,19 +8,19 @@ import (
 	"games_api/internal/service"
 )
 
-func BuildRepository(ctx context.Context, cfg config.Config) (service.JogoRepository, func() error, error) {
+func BuildRepositories(ctx context.Context, cfg config.Config) (service.JogoRepository, service.WebhookRepository, func() error, error) {
 	if !cfg.IsProd() {
-		return service.NewMemoryJogoRepository(), func() error { return nil }, nil
+		return service.NewMemoryJogoRepository(), service.NewMemoryWebhookRepository(), func() error { return nil }, nil
 	}
 
 	if err := cfg.PrepareGoogleCredentialsFile(); err != nil {
-		return nil, nil, fmt.Errorf("erro ao preparar credenciais do firestore: %w", err)
+		return nil, nil, nil, fmt.Errorf("erro ao preparar credenciais do firestore: %w", err)
 	}
 
-	repo, err := service.NewFirestoreJogoRepository(ctx, cfg.GCPProjectID)
+	jogoRepo, webhookRepo, closeRepos, err := service.NewFirestoreRepositories(ctx, cfg.GCPProjectID)
 	if err != nil {
-		return nil, nil, fmt.Errorf("erro ao conectar no firestore: %w", err)
+		return nil, nil, nil, fmt.Errorf("erro ao conectar no firestore: %w", err)
 	}
 
-	return repo, repo.Close, nil
+	return jogoRepo, webhookRepo, closeRepos, nil
 }

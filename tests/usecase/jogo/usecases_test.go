@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	domainjogo "games_api/internal/domain/jogo"
+	domainwebhook "games_api/internal/domain/webhook"
 	"games_api/internal/service"
 	jogousecase "games_api/internal/usecase/jogo"
 
@@ -85,7 +86,7 @@ func TestGetJogoUseCase(t *testing.T) {
 
 func TestCreateJogoUseCaseValidatesRequest(t *testing.T) {
 	repo := &fakeJogoRepository{}
-	uc := jogousecase.NewCreateJogoUseCase(repo)
+	uc := jogousecase.NewCreateJogoUseCase(repo, nil)
 
 	_, err := uc.Execute(context.Background(), domainjogo.CreateJogoRequest{Nota: 11})
 
@@ -95,7 +96,7 @@ func TestCreateJogoUseCaseValidatesRequest(t *testing.T) {
 
 func TestCreateJogoUseCaseCreatesJogo(t *testing.T) {
 	repo := &fakeJogoRepository{created: domainjogo.Jogo{ID: 3, Nome: "Elden Ring", Tipo: "RPG", Nota: 9, Review: "Otimo"}}
-	uc := jogousecase.NewCreateJogoUseCase(repo)
+	uc := jogousecase.NewCreateJogoUseCase(repo, nil)
 
 	result, err := uc.Execute(context.Background(), domainjogo.CreateJogoRequest{
 		Nome: " Elden Ring ", Tipo: "RPG", Nota: 9, Review: "Otimo",
@@ -109,7 +110,7 @@ func TestCreateJogoUseCaseCreatesJogo(t *testing.T) {
 
 func TestUpdateJogoUseCaseValidatesRequest(t *testing.T) {
 	repo := &fakeJogoRepository{}
-	uc := jogousecase.NewUpdateJogoUseCase(repo)
+	uc := jogousecase.NewUpdateJogoUseCase(repo, nil)
 
 	_, err := uc.Execute(context.Background(), 1, domainjogo.UpdateJogoRequest{Nota: 0})
 
@@ -119,7 +120,7 @@ func TestUpdateJogoUseCaseValidatesRequest(t *testing.T) {
 
 func TestUpdateJogoUseCaseReturnsRepositoryError(t *testing.T) {
 	repo := &fakeJogoRepository{err: service.ErrJogoNotFound}
-	uc := jogousecase.NewUpdateJogoUseCase(repo)
+	uc := jogousecase.NewUpdateJogoUseCase(repo, nil)
 
 	_, err := uc.Execute(context.Background(), 99, domainjogo.UpdateJogoRequest{
 		Nome: "Halo", Tipo: "FPS", Nota: 8, Review: "Classico",
@@ -130,12 +131,90 @@ func TestUpdateJogoUseCaseReturnsRepositoryError(t *testing.T) {
 }
 
 func TestDeleteJogoUseCase(t *testing.T) {
-	repo := &fakeJogoRepository{}
-	uc := jogousecase.NewDeleteJogoUseCase(repo)
+	repo := &fakeJogoRepository{items: []domainjogo.Jogo{{ID: 2, Nome: "FIFA 23"}}}
+	uc := jogousecase.NewDeleteJogoUseCase(repo, nil)
 
 	err := uc.Execute(context.Background(), 2)
 
 	require.NoError(t, err)
 	assert.True(t, repo.deleteCalled)
 	assert.Equal(t, 2, repo.receivedID)
+}
+
+type fakePublisher struct {
+	called  bool
+	payload domainwebhook.EventPayload
+}
+
+func (p *fakePublisher) Publish(_ context.Context, payload domainwebhook.EventPayload) {
+	p.called = true
+	p.payload = payload
+}
+
+func TestCreateJogoUseCasePublishesEvent(t *testing.T) {
+	repo := &fakeJogoRepository{created: domainjogo.Jogo{ID: 3, Nome: "Elden Ring"}}
+	publisher := &fakePublisher{}
+	uc := jogousecase.NewCreateJogoUseCase(repo, publisher)
+
+	_, err := uc.Execute(context.Background(), domainjogo.CreateJogoRequest{
+		Nome: "Elden Ring", Tipo: "RPG", Nota: 9, Review: "Otimo",
+	})
+
+	require.NoError(t, err)
+	assert.True(t, publisher.called)
+	assert.Equal(t, "jogo.criado", publisher.payload.Evento)
+	assert.Equal(t, 3, publisher.payload.ID)
+	assert.Equal(t, "Elden Ring", publisher.payload.Nome)
+}
+
+func TestCreateJogoUseCaseDoesNotPublishWhenValidationFails(t *testing.T) {
+	publisher := &fakePublisher{}
+	uc := jogousecase.NewCreateJogoUseCase(&fakeJogoRepository{}, publisher)
+
+	_, err := uc.Execute(context.Background(), domainjogo.CreateJogoRequest{Nota: 11})
+
+	require.Error(t, err)
+	assert.False(t, publisher.called)
+}
+
+func TestUpdateJogoUseCasePublishesEvent(t *testing.T) {
+	repo := &fakeJogoRepository{updated: domainjogo.Jogo{ID: 1, Nome: "Halo"}}
+	publisher := &fakePublisher{}
+	uc := jogousecase.NewUpdateJogoUseCase(repo, publisher)
+
+	_, err := uc.Execute(context.Background(), 1, domainjogo.UpdateJogoRequest{
+		Nome: "Halo", Tipo: "FPS", Nota: 8, Review: "Classico",
+	})
+
+	require.NoError(t, err)
+	assert.True(t, publisher.called)
+	assert.Equal(t, "jogo.atualizado", publisher.payload.Evento)
+	assert.Equal(t, 1, publisher.payload.ID)
+	assert.Equal(t, "Halo", publisher.payload.Nome)
+}
+
+func TestDeleteJogoUseCasePublishesEvent(t *testing.T) {
+	repo := &fakeJogoRepository{items: []domainjogo.Jogo{{ID: 2, Nome: "FIFA 23"}}}
+	publisher := &fakePublisher{}
+	uc := jogousecase.NewDeleteJogoUseCase(repo, publisher)
+
+	err := uc.Execute(context.Background(), 2)
+
+	require.NoError(t, err)
+	assert.True(t, publisher.called)
+	assert.Equal(t, "jogo.removido", publisher.payload.Evento)
+	assert.Equal(t, 2, publisher.payload.ID)
+	assert.Equal(t, "FIFA 23", publisher.payload.Nome)
+}
+
+func TestDeleteJogoUseCaseDoesNotPublishWhenNotFound(t *testing.T) {
+	repo := &fakeJogoRepository{err: service.ErrJogoNotFound}
+	publisher := &fakePublisher{}
+	uc := jogousecase.NewDeleteJogoUseCase(repo, publisher)
+
+	err := uc.Execute(context.Background(), 99)
+
+	assert.ErrorIs(t, err, service.ErrJogoNotFound)
+	assert.False(t, repo.deleteCalled)
+	assert.False(t, publisher.called)
 }

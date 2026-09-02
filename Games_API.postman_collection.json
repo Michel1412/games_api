@@ -2,7 +2,7 @@
 	"info": {
 		"_postman_id": "550e8400-e29b-41d4-a716-446655440000",
 		"name": "Games API",
-		"description": "Collection para testar a API de jogos em Go. Inclui login e CRUD de reviews de jogos conforme o swagger simplificado do projeto.",
+		"description": "Collection para testar a API de jogos em Go. Inclui login, CRUD de reviews de jogos e configuracao de webhooks.",
 		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
 	},
 	"item": [
@@ -179,6 +179,127 @@
 				}
 			],
 			"description": "Endpoints do CRUD de reviews de jogos."
+		},
+		{
+			"name": "Webhooks",
+			"item": [
+				{
+					"name": "Listar Webhooks",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/webhooks",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"webhooks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Buscar Webhook Por ID",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/webhooks/1",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"webhooks",
+								"1"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Criar Webhook",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\r\n    \"url\": \"https://example.com/hook\"\r\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "http://localhost:8080/webhooks",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"webhooks"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Ativar Webhook",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/webhooks/1/ativar",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"webhooks",
+								"1",
+								"ativar"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Desativar Webhook",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8080/webhooks/1/desativar",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8080",
+							"path": [
+								"webhooks",
+								"1",
+								"desativar"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"description": "Configuracao de webhooks. Criacao, atualizacao e exclusao de jogos disparam POST com payload simplificado para todos os webhooks ativos."
 		}
 	]
 }

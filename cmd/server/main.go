@@ -9,8 +9,10 @@ import (
 	"games_api/internal/bootstrap"
 	"games_api/internal/config"
 	"games_api/internal/handler"
+	"games_api/internal/service"
 	jogousecase "games_api/internal/usecase/jogo"
 	userusecase "games_api/internal/usecase/user"
+	webhookusecase "games_api/internal/usecase/webhook"
 )
 
 func main() {
@@ -20,23 +22,29 @@ func main() {
 	}
 
 	ctx := context.Background()
-	repo, closeRepo, err := bootstrap.BuildRepository(ctx, cfg)
+	jogoRepo, webhookRepo, closeRepos, err := bootstrap.BuildRepositories(ctx, cfg)
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
 	defer func() {
-		if err := closeRepo(); err != nil {
+		if err := closeRepos(); err != nil {
 			log.Printf("erro ao fechar repositorio: %v", err)
 		}
 	}()
 
+	publisher := service.NewWebhookPublisher(webhookRepo, service.NewHTTPWebhookDispatcher())
+
 	router := handler.NewRouter(
 		userusecase.NewLoginUseCase(),
-		jogousecase.NewListJogosUseCase(repo),
-		jogousecase.NewGetJogoUseCase(repo),
-		jogousecase.NewCreateJogoUseCase(repo),
-		jogousecase.NewUpdateJogoUseCase(repo),
-		jogousecase.NewDeleteJogoUseCase(repo),
+		jogousecase.NewListJogosUseCase(jogoRepo),
+		jogousecase.NewGetJogoUseCase(jogoRepo),
+		jogousecase.NewCreateJogoUseCase(jogoRepo, publisher),
+		jogousecase.NewUpdateJogoUseCase(jogoRepo, publisher),
+		jogousecase.NewDeleteJogoUseCase(jogoRepo, publisher),
+		webhookusecase.NewListWebhooksUseCase(webhookRepo),
+		webhookusecase.NewGetWebhookUseCase(webhookRepo),
+		webhookusecase.NewCreateWebhookUseCase(webhookRepo),
+		webhookusecase.NewSetWebhookAtivoUseCase(webhookRepo),
 	)
 
 	server := &http.Server{
