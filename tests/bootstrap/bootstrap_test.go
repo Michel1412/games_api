@@ -11,15 +11,20 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestBuildRepositoryUsesMemoryWhenNotProd(t *testing.T) {
-	repo, closeRepo, err := bootstrap.BuildRepository(context.Background(), config.Config{Env: "dev"})
+func TestBuildRepositoriesUsesMemoryWhenNotProd(t *testing.T) {
+	jogoRepo, webhookRepo, closeRepos, err := bootstrap.BuildRepositories(context.Background(), config.Config{Env: "dev"})
 	require.NoError(t, err)
-	require.NotNil(t, repo)
-	require.NotNil(t, closeRepo)
+	require.NotNil(t, jogoRepo)
+	require.NotNil(t, webhookRepo)
+	require.NotNil(t, closeRepos)
 
-	jogos, err := repo.List(context.Background())
+	jogos, err := jogoRepo.List(context.Background())
 	require.NoError(t, err)
 	assert.NotEmpty(t, jogos)
 
-	assert.NoError(t, closeRepo())
+	webhooks, err := webhookRepo.List(context.Background())
+	require.NoError(t, err)
+	assert.Empty(t, webhooks)
+
+	assert.NoError(t, closeRepos())
 }

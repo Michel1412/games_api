@@ -7,17 +7,24 @@ import (
 	"games_api/internal/service"
 	jogousecase "games_api/internal/usecase/jogo"
 	userusecase "games_api/internal/usecase/user"
+	webhookusecase "games_api/internal/usecase/webhook"
 )
 
 func newTestRouter() http.Handler {
-	repo := service.NewMemoryJogoRepository()
+	jogoRepo := service.NewMemoryJogoRepository()
+	webhookRepo := service.NewMemoryWebhookRepository()
+	publisher := service.NewWebhookPublisher(webhookRepo, service.NewHTTPWebhookDispatcher())
 
 	return handler.NewRouter(
 		userusecase.NewLoginUseCase(),
-		jogousecase.NewListJogosUseCase(repo),
-		jogousecase.NewGetJogoUseCase(repo),
-		jogousecase.NewCreateJogoUseCase(repo),
-		jogousecase.NewUpdateJogoUseCase(repo),
-		jogousecase.NewDeleteJogoUseCase(repo),
+		jogousecase.NewListJogosUseCase(jogoRepo),
+		jogousecase.NewGetJogoUseCase(jogoRepo),
+		jogousecase.NewCreateJogoUseCase(jogoRepo, publisher),
+		jogousecase.NewUpdateJogoUseCase(jogoRepo, publisher),
+		jogousecase.NewDeleteJogoUseCase(jogoRepo, publisher),
+		webhookusecase.NewListWebhooksUseCase(webhookRepo),
+		webhookusecase.NewGetWebhookUseCase(webhookRepo),
+		webhookusecase.NewCreateWebhookUseCase(webhookRepo),
+		webhookusecase.NewSetWebhookAtivoUseCase(webhookRepo),
 	)
 }

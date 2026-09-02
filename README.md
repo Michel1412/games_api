@@ -17,19 +17,19 @@ API REST em Go para um CRUD simples de reviews de jogos, pensada para servir com
 .
 ├── cmd/server/             # entrypoint da aplicacao (package main)
 ├── internal/
-│   ├── bootstrap/          # construcao do repositorio (memoria/Firestore)
+│   ├── bootstrap/          # construcao dos repositorios (memoria/Firestore)
 │   ├── config/             # leitura de variaveis de ambiente
-│   ├── domain/             # entidades e DTOs (jogo, user)
+│   ├── domain/             # entidades e DTOs (jogo, user, webhook)
 │   ├── handler/            # rotas HTTP, CORS, handlers
-│   ├── service/            # implementacoes de JogoRepository
-│   └── usecase/            # regras de negocio (jogo, user)
+│   ├── service/            # implementacoes de repositorios e dispatcher de webhook
+│   └── usecase/            # regras de negocio (jogo, user, webhook)
 └── tests/                  # toda a suite de testes, espelhando a estrutura interna
     ├── bootstrap/
     ├── config/
-    ├── domain/{jogo,user}/
+    ├── domain/{jogo,user,webhook}/
     ├── handler/
     ├── service/
-    └── usecase/{jogo,user}/
+    └── usecase/{jogo,user,webhook}/
 ```
 
 Os testes ficam **isolados em `tests/`** em vez de espalhados como `*_test.go` ao lado do codigo de producao. Cada pacote de teste usa o sufixo `_test` (caixa preta) e importa apenas a API publica de `internal/...`.
@@ -112,10 +112,63 @@ Atualiza todos os dados do jogo. Todos os campos sao obrigatorios.
 
 Remove fisicamente o jogo.
 
+## Webhooks
+
+Toda criacao, atualizacao ou exclusao de jogo e enviada para os webhooks **ativos**, sem filtro de evento. O POST e disparado em background e falhas de entrega nao afetam a resposta do CRUD.
+
+Payload simplificado:
+
+```json
+{
+  "evento": "jogo.criado",
+  "id": 3,
+  "nome": "Elden Ring"
+}
+```
+
+Valores de `evento`: `jogo.criado`, `jogo.atualizado`, `jogo.removido`.
+
+### GET `/webhooks`
+
+Lista todas as configuracoes de webhook.
+
+### GET `/webhooks/{id}`
+
+Retorna um webhook pelo ID sequencial.
+
+### POST `/webhooks`
+
+Cria um webhook ja ativo:
+
+```json
+{
+  "url": "https://example.com/hook"
+}
+```
+
+Resposta `201 Created`:
+
+```json
+{
+  "id": 1,
+  "url": "https://example.com/hook",
+  "ativo": true
+}
+```
+
+### POST `/webhooks/{id}/ativar`
+
+Reativa um webhook desativado.
+
+### POST `/webhooks/{id}/desativar`
+
+Desativa um webhook. Ele deixa de receber eventos, mas a configuracao permanece.
+
 ## Validacoes e erros
 
 - `nome`, `tipo` e `review` sao obrigatorios.
 - `nota` deve estar entre 1 e 10.
+- `url` do webhook deve ser `http` ou `https`.
 - Erros retornam `400 Bad Request`:
 
 ```json

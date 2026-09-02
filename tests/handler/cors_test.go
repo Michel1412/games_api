@@ -22,6 +22,8 @@ func TestCorsPreflightAcceptsArbitraryHeaders(t *testing.T) {
 		{"jogos custom header", http.MethodOptions, "/jogos", "POST", "X-Requested-With,Content-Type"},
 		{"update authorization", http.MethodOptions, "/jogos/1", "PUT", "Authorization,Content-Type"},
 		{"delete request", http.MethodOptions, "/jogos/1", "DELETE", "Authorization"},
+		{"webhooks create", http.MethodOptions, "/webhooks", "POST", "Content-Type"},
+		{"webhooks activate", http.MethodOptions, "/webhooks/1/ativar", "POST", "Content-Type"},
 	}
 
 	for _, tc := range cases {

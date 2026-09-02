@@ -6,6 +6,7 @@ import (
 
 	domainjogo "games_api/internal/domain/jogo"
 	domainuser "games_api/internal/domain/user"
+	domainwebhook "games_api/internal/domain/webhook"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -36,6 +37,22 @@ type DeleteJogoUseCase interface {
 	Execute(ctx context.Context, id int) error
 }
 
+type ListWebhooksUseCase interface {
+	Execute(ctx context.Context) ([]domainwebhook.Webhook, error)
+}
+
+type GetWebhookUseCase interface {
+	Execute(ctx context.Context, id int) (domainwebhook.Webhook, error)
+}
+
+type CreateWebhookUseCase interface {
+	Execute(ctx context.Context, request domainwebhook.CreateWebhookRequest) (domainwebhook.Webhook, error)
+}
+
+type SetWebhookAtivoUseCase interface {
+	Execute(ctx context.Context, id int, ativo bool) (domainwebhook.Webhook, error)
+}
+
 func NewRouter(
 	loginUC LoginUseCase,
 	listUC ListJogosUseCase,
@@ -43,6 +60,10 @@ func NewRouter(
 	createUC CreateJogoUseCase,
 	updateUC UpdateJogoUseCase,
 	deleteUC DeleteJogoUseCase,
+	listWebhooksUC ListWebhooksUseCase,
+	getWebhookUC GetWebhookUseCase,
+	createWebhookUC CreateWebhookUseCase,
+	setWebhookAtivoUC SetWebhookAtivoUseCase,
 ) http.Handler {
 	r := chi.NewRouter()
 
@@ -66,6 +87,7 @@ func NewRouter(
 
 	userHandler := NewUserHandler(loginUC)
 	jogoHandler := NewJogoHandler(listUC, getUC, createUC, updateUC, deleteUC)
+	webhookHandler := NewWebhookHandler(listWebhooksUC, getWebhookUC, createWebhookUC, setWebhookAtivoUC)
 
 	r.Post("/login", userHandler.Login)
 	r.Get("/jogos", jogoHandler.List)
@@ -73,6 +95,12 @@ func NewRouter(
 	r.Post("/jogos", jogoHandler.Create)
 	r.Put("/jogos/{id}", jogoHandler.Update)
 	r.Delete("/jogos/{id}", jogoHandler.Delete)
+
+	r.Get("/webhooks", webhookHandler.List)
+	r.Get("/webhooks/{id}", webhookHandler.GetByID)
+	r.Post("/webhooks", webhookHandler.Create)
+	r.Post("/webhooks/{id}/ativar", webhookHandler.Activate)
+	r.Post("/webhooks/{id}/desativar", webhookHandler.Deactivate)
 
 	return r
 }
